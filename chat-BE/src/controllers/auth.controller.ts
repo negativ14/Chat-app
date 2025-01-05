@@ -153,37 +153,65 @@ export const logout = (req: Request, res: Response) => {
 
 export const updateUserProfile = async (req: CustomRequest, res: Response): Promise<any> => {
     try {
-        const { profilePic, fullName, username } = req.body;
+        const { profilePic, fullName, username, email } = req.body;
         const userId = req.user?._id;
+
+        console.log("this is req body", req.body)
+        console.log(profilePic);
+        console.log(fullName);
+        console.log(username);
 
         if (!profilePic && !fullName && !username) {
             return res.status(400).json({ message: "At least one field (profilePic, fullName, or username) is required." });
         }
 
-        const updateData: { profilePic?: string; fullName?: string; username?: string } = {};
+        const updateData: { profilePic?: string; fullName?: string; username?: string; } = {};
 
         if (profilePic) {
-            const uploadResponse = await cloudinary.uploader.upload(profilePic);
-            updateData.profilePic = uploadResponse.secure_url;
+            try {
+                const uploadResponse = await cloudinary.uploader.upload(profilePic);
+                updateData.profilePic = uploadResponse.secure_url;
+            } catch (error) {
+                return res.status(500).json({ message: "Failed to upload profile picture." });
+            }
         }
 
         if (fullName) {
             updateData.fullName = fullName;
         }
 
+        // if (username) {
+        //     const existingUser = await UserModel.findOne({ username });
+        //     if (existingUser && existingUser._id.toString() !== userId?.toString()) {
+        //         return res.status(400).json({ message: "Username is already taken." });
+        //     }
+        //     else {
+        //         updateData.username = username;
+        //         const updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        //         return res.status(200).json({
+        //             updatedUser,
+        //         });
+        //     }
+        // }
+
         if (username) {
             const existingUser = await UserModel.findOne({ username });
-            if (existingUser && existingUser._id !== userId) {
+            if (existingUser && existingUser._id.toString() !== userId?.toString()) {
                 return res.status(400).json({ message: "Username is already taken." });
             }
             updateData.username = username;
         }
 
         const updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
 
         return res.status(200).json({
+            // message: "Profile updated successfully.",
             updatedUser,
         });
+
     } catch (error) {
         return res.status(500).json({
             message: `Server side issue: ${error}`,
@@ -192,9 +220,10 @@ export const updateUserProfile = async (req: CustomRequest, res: Response): Prom
 };
 
 
-export const checkAuth = ( req: CustomRequest, res: Response ) => {
+export const checkAuth = (req: CustomRequest, res: Response) => {
     try {
-        res.status(200).json( req.user?._id );
+        res.status(200).json(req.user);
+        console.log("from checkAuth controller:", req.user)
     } catch (error) {
         console.log("Error in checkAuth controller", error)
         res.status(500).json({

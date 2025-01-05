@@ -1,13 +1,13 @@
 import express from "express";
-import authRouter from "./auth.route";
 import { getMessages, getUserSidebar, sendMessage } from "../controllers/message.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const messageRouter = express.Router();
 
-messageRouter.get('/users', authRouter, getUserSidebar);
+messageRouter.get('/users', authMiddleware, getUserSidebar);
 
-messageRouter.get('/:id', authRouter, getMessages);
+messageRouter.get('/:id', authMiddleware, getMessages);
 
-messageRouter.post('/send/:id', authRouter, sendMessage);
+messageRouter.post('/send/:id', authMiddleware, sendMessage);
 
 export default messageRouter;

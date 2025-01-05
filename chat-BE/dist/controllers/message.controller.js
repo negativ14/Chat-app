@@ -58,20 +58,32 @@ const sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const { text, image } = req.body;
         const { id: receiverId } = req.params;
         const senderId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        console.log("From BE senderId", senderId);
+        console.log("From BE receiverId", receiverId);
+        console.log("User from BE", req.body);
         let imageUrl;
         if (image) {
             const uploadResponse = yield cloudinary_1.default.uploader.upload(image);
             const imageUrl = uploadResponse.secure_url;
+            const newMessage = new message_model_1.MessageModel({
+                senderId,
+                receiverId,
+                image: imageUrl,
+                text,
+            });
+            yield newMessage.save();
+            res.status(201).json(newMessage);
         }
-        const newMessage = new message_model_1.MessageModel({
-            senderId,
-            receiverId,
-            image: imageUrl,
-            text,
-        });
-        yield newMessage.save();
-        //todo: realTime functionality goes here => socket.io
-        res.status(201).json(newMessage);
+        else {
+            const newMessage = new message_model_1.MessageModel({
+                senderId,
+                receiverId,
+                text,
+            });
+            yield newMessage.save();
+            //todo: realTime functionality goes here => socket.io
+            res.status(201).json(newMessage);
+        }
     }
     catch (error) {
         console.log("Error while sending message", error);

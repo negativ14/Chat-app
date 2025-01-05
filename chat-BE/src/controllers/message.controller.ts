@@ -1,4 +1,5 @@
 import cloudinary from "../lib/cloudinary";
+import { getReceiverSocketId, io } from "../lib/socket";
 import { CustomRequest } from "../middleware/auth.middleware"
 import { MessageModel } from "../models/message.model";
 import { UserModel } from "../models/user.model";
@@ -46,24 +47,51 @@ export const sendMessage = async (req: CustomRequest, res: Response): Promise<an
         const { id: receiverId } = req.params;
         const senderId = req.user?._id;
 
+        console.log("From BE senderId",senderId);
+        console.log("From BE receiverId",receiverId);
+        console.log("User from BE",req.body);
+
         let imageUrl;
 
         if(image){
             const uploadResponse = await cloudinary.uploader.upload(image);
             const imageUrl = uploadResponse.secure_url;
+
+            const newMessage = new MessageModel({
+                senderId,
+                receiverId,
+                image: imageUrl,
+                text,
+            });
+
+            await newMessage.save();
+
+            const receiverSocketId = getReceiverSocketId(receiverId);
+            if(receiverSocketId) {
+                io.to(receiverSocketId).emit("newMessage",newMessage);
+            }
+
+            res.status(201).json(newMessage);
+        }else{
+            const newMessage = new MessageModel({
+                senderId,
+                receiverId,
+                text,
+            });
+    
+            await newMessage.save();
+
+            //realTime functionality goes here => socket.io
+            const receiverSocketId = getReceiverSocketId(receiverId);
+            if(receiverSocketId) {
+                io.to(receiverSocketId).emit("newMessage",newMessage);
+            }
+
+            res.status(201).json(newMessage);
         }
 
-        const newMessage = new MessageModel({
-            senderId,
-            receiverId,
-            image: imageUrl,
-            text,
-        });
-
-        await newMessage.save();
-
-        //todo: realTime functionality goes here => socket.io
-        res.status(201).json(newMessage);
+        
+        
 
     } catch (error) {
         console.log("Error while sending message",error);

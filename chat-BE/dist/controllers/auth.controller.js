@@ -143,28 +143,54 @@ exports.logout = logout;
 const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { profilePic, fullName, username } = req.body;
+        const { profilePic, fullName, username, email } = req.body;
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+        console.log("this is req body", req.body);
+        console.log(profilePic);
+        console.log(fullName);
+        console.log(username);
         if (!profilePic && !fullName && !username) {
             return res.status(400).json({ message: "At least one field (profilePic, fullName, or username) is required." });
         }
         const updateData = {};
         if (profilePic) {
-            const uploadResponse = yield cloudinary_1.default.uploader.upload(profilePic);
-            updateData.profilePic = uploadResponse.secure_url;
+            try {
+                const uploadResponse = yield cloudinary_1.default.uploader.upload(profilePic);
+                updateData.profilePic = uploadResponse.secure_url;
+            }
+            catch (error) {
+                return res.status(500).json({ message: "Failed to upload profile picture." });
+            }
         }
         if (fullName) {
             updateData.fullName = fullName;
         }
+        // if (username) {
+        //     const existingUser = await UserModel.findOne({ username });
+        //     if (existingUser && existingUser._id.toString() !== userId?.toString()) {
+        //         return res.status(400).json({ message: "Username is already taken." });
+        //     }
+        //     else {
+        //         updateData.username = username;
+        //         const updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        //         return res.status(200).json({
+        //             updatedUser,
+        //         });
+        //     }
+        // }
         if (username) {
             const existingUser = yield user_model_1.UserModel.findOne({ username });
-            if (existingUser && existingUser._id !== userId) {
+            if (existingUser && existingUser._id.toString() !== (userId === null || userId === void 0 ? void 0 : userId.toString())) {
                 return res.status(400).json({ message: "Username is already taken." });
             }
             updateData.username = username;
         }
         const updatedUser = yield user_model_1.UserModel.findByIdAndUpdate(userId, updateData, { new: true });
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
         return res.status(200).json({
+            // message: "Profile updated successfully.",
             updatedUser,
         });
     }
@@ -176,9 +202,9 @@ const updateUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.updateUserProfile = updateUserProfile;
 const checkAuth = (req, res) => {
-    var _a;
     try {
-        res.status(200).json((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
+        res.status(200).json(req.user);
+        console.log("from checkAuth controller:", req.user);
     }
     catch (error) {
         console.log("Error in checkAuth controller", error);

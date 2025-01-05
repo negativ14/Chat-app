@@ -11,6 +11,8 @@ export interface CustomRequest extends Request {
         profilePic: string,
         email: string,
         _id: Types.ObjectId,
+        createdAt: Date,
+        updatedAt: Date,
     };
 }
 
@@ -24,14 +26,15 @@ export const authMiddleware = async (req: CustomRequest, res: Response, next: Ne
 
         const JWT_SECRET = process.env.JWT_SECRET || "NEGATIV_SECRET"
         const decoded = jwt.verify(token, JWT_SECRET);
-        //console.log(decoded);
+        console.log(decoded);
 
         if (!decoded || typeof decoded !== "object" || !("_id" in decoded)) {
             console.log("Invalid token");
             return res.status(403).json({ message: "Invalid token" });
         }
         
-        const user = await UserModel.findById(decoded.userId).select("-password").lean();
+        const user = await UserModel.findOne({_id: decoded._id});
+        console.log(user);
 
         if(!user){
            return res.status(404).json({ message: "User not found"})
@@ -44,6 +47,8 @@ export const authMiddleware = async (req: CustomRequest, res: Response, next: Ne
             username: user.username,
             profilePic: user.profilePic,
             email: user.email,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
         };
         
         next();

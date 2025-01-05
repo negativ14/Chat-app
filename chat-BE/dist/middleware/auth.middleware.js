@@ -23,12 +23,13 @@ const authMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
         }
         const JWT_SECRET = process.env.JWT_SECRET || "NEGATIV_SECRET";
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        //console.log(decoded);
+        console.log(decoded);
         if (!decoded || typeof decoded !== "object" || !("_id" in decoded)) {
             console.log("Invalid token");
             return res.status(403).json({ message: "Invalid token" });
         }
-        const user = yield user_model_1.UserModel.findById(decoded.userId).select("-password").lean();
+        const user = yield user_model_1.UserModel.findOne({ _id: decoded._id });
+        console.log(user);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -39,6 +40,8 @@ const authMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
             username: user.username,
             profilePic: user.profilePic,
             email: user.email,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
         };
         next();
     }
